@@ -4,6 +4,7 @@ using LinearAlgebra
 using SparseArrays
 
 include("types.jl")
+include("utils.jl")
 include("algorithm.jl")
 
 
