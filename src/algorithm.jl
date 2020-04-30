@@ -1,4 +1,4 @@
-# TODO: implement steps 
+# TODO: implement steps
 function ipm_step!(solv::IplpSolver{T}) where T
 
 end
@@ -25,9 +25,11 @@ function solve!(solv::IplpSolver{T}, maxiter::Int) where T
         if (
             solv.status == SolverOptimal          ||
             solv.status == SolverPrimalInfeasible ||
-            solv.status == SolverDualInfeasible   ||
-            solv.niter  >= maxiter
+            solv.status == SolverDualInfeasible
         )
+            break
+        elseif solv.niter >= maxiter
+            solv.status = SolverExceededIterations
             break
         end
 
