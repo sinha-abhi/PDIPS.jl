@@ -1,5 +1,5 @@
-# TODO: implement algorithm
-function ipm_step!()
+# TODO: implement steps 
+function ipm_step!(solv::IplpSolver{T}) where T
 
 end
 
@@ -18,34 +18,28 @@ function solve!(solv::IplpSolver{T}, maxiter::Int) where T
         duality!(solv.iter)
 
         # check solver status -- exit if needed
+        check_status!(
+            solv, solv.iter, solv.res, solv.tols,
+            slp.A, slp.b, slp.c, slp.upb_ind, slp.upb_val
+        )
+        if (
+            solv.status == SolverOptimal          ||
+            solv.status == SolverPrimalInfeasible ||
+            solv.status == SolverDualInfeasible   ||
+            solv.niter  >= maxiter
+        )
+            break
+        end
 
         # take next ipm_step
+        try
+            ipm_step!(solv)
+        catch err
+            # TODO: catch errors
+        end
 
-        solv.iter += 1
+        solv.niter += 1
     end
-end
 
-"""
-    solve(lp::Problem, maxiter::Int = 100, tol::T) where T
-
-Solve the linear program. Returns an `IplpSolution`.
-"""
-function solve(lp::Problem, maxiter::Int = 100, tol::T = 1e-8) where T <: Real
-    # convert problem to standard form
-    slp = reformulate(lp)
-
-    # starting point
-    iter = Iterate{T}(slp.nc, slp.nv, slp.nu)
-    # FIXME: does this need its own func call?
-    starting_pt!(iter)
-    duality!(iter)
-
-    tols = Tolerances{T}(tol)
-    solv = IplpSolver{T}(slp, iter, tol)
-
-    # call internal HSD algorithm
-    solve!(solv, maxiter)
-
-    # extract solution from solver
-    get_solution(solv, lp)
+    nothing
 end

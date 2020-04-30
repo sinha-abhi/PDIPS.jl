@@ -1,50 +1,4 @@
 """
-    load_problem!(lp::IplpProblem{T},
-                  A::AbstractMatrix{T},
-                  b::Vector{T},
-                  c::Vector{T},
-                  lo::Vector{T},
-                  hi::Vector{T}) where T <: Real
-
-Load problem data into an `IplpProblem{T}`.
-"""
-function load_problem!(
-    lp::Problem,
-    A::AbstractMatrix{T},
-    b::Vector{T},
-    c::Vector{T},
-    lo::Vector{T},
-    hi::Vector{T}
-) where T <: Real
-    nc = size(A, 1)
-    nc == length(b) || throw(DimensionMismatch(
-        "constraint matrix has $nc rows, but rhs has only $(length(b))"
-    ))
-
-    nv = length(c)
-    (nv == length(lo) && nv == length(hi)) || throw(DimensionMismatch(
-        "solution vector has expected length $nv"
-    ))
-
-    nc <= nv || error("must have fewer constraints than variables")
-
-    # store only the non-zero values of A
-    cols = Vector{Column{T}}(undef, size(A, 2))
-    for (j, col) in enumerate(eachcol(A))
-        cols[j] = Column{T}()
-        for (i, nzv) in enumerate(col)
-            if v != 0
-                push!(cols[j].ind, i)
-                push!(cols[j].nzval, nzv)
-            end
-        end
-    end
-
-    lp = IplpProblem{T}(nc, nv, cols, b, c, lo, hi)
-    nothing
-end
-
-"""
     reformulate(lp::Problem) where T
 
 Convert from IplpProblem to IplpStandardProblem.
@@ -183,7 +137,7 @@ function starting_pt!(iter::Iterate{T}) where T
     iter.s .= oneunit(T)
     iter.w .= oneunit(T)
 
-    # homogenous constants 
+    # homogenous constants
     iter.τ = oneunit(T)
     iter.κ = oneunit(T)
 
@@ -201,7 +155,6 @@ function duality!(i::Iterate{T}) where T
     nothing
 end
 
-# TODO: function to update residuals
 function update_residuals!(
     res::Residuals{T},
     iter::Iterate{T},
@@ -235,6 +188,69 @@ function update_residuals!(
     # rg = c'x - (b'λ + u'w) + κ
     res.rg = iter.κ + dot(c, iter.x) - dot(b, iter.λ) + dot(ubv, iter.w)
     res.rgn = norm(rg)
+
+    nothing
+end
+
+function check_status!(
+    solv::IplpSolver{T},
+    iter::Iterate{T},
+    res::Residuals{T},
+    tols::Tolerances{T},
+    A::AbstractMatrix{T},
+    b::Vector{T},
+    c::Vector{T},
+    ubi::Vector{T},
+    ubv::Vector{T}
+) where T
+    # _p = max(|rp| / (τ * (1 + |b|)), |ru| / (τ * (1 + |u|)))
+    _p = max(
+        res.rpn / (iter.τ * (oneunit(T) + norm(b, Inf)),
+        res.run / (iter.τ * (oneunit(T) + norm(ubv, Inf))))
+    )
+
+    # _d = |rd| / (τ * (1 + |c|))
+    _d = res.rdn / (iter.τ * (oneunit(T) + norm(c, Inf)))
+
+    primal_bound = dot(c, iter.x)                     # c'x
+    dual_bound   = dot(b, iter.λ) - dot(ubv, iter.w)  # b'λ - u'w
+
+    # _g = |c'x - b'λ| / (τ + |b'λ|)
+    _g = abs(primal_bound - dual_bound) / (iter.τ + abs(dual_bound))
+
+    solv.status_primal = (_p <= tols.εp) ? IterateFeasible : IterateUndefined
+    solv.status_dual   = (_d <= tols.εd) ? IterateFeasible : IterateUndefined
+
+    # check optimality
+    if _p <= tols.εp && _d <= tols.εd && _g <= εg
+        solv.status        = SolverOptimal
+        solv.status_primal = IterateOptimal
+        solv.status_dual   = IterateOptimal
+
+        return nothing
+    end
+
+    # check infeasibility
+    _ax_n = max(
+        norm(A * iter.x, Inf),
+        norm(iter.x[ubi] + iter.v, Inf)
+    )
+    _cb_n = norm(c, Inf) / max(1, norm(b, Inf))
+    if _ax_n * _cb_n < - tols.εi * dot(c, iter.x)
+        solv.status_primal = IterateInfeasible
+        solv.status        = SolverDualInfeasible
+
+        return nothing
+    end
+
+    δ = transpose(A) * iter.λ + iter.s
+    δ[ubi] .-= iter.w
+    if norm(δ, Inf) * norm(b, Inf) / max(1, norm(c, Inf)) < tols.εi * dual_bound
+        solv.status_dual = IterateInfeasible
+        solv.status      = SolverPrimalInfeasible
+
+        return nothing
+    end
 
     nothing
 end

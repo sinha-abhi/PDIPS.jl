@@ -6,6 +6,7 @@ using SparseArrays
 include("types.jl")
 include("utils.jl")
 include("algorithm.jl")
+include("api.jl")
 
 
 # TODO: export types and methods

@@ -130,6 +130,32 @@ mutable struct Tolerances{T}
 end
 
 
+#=============
+    STATUS
+=============#
+@enum SolverStatus begin
+    SolverUndefined
+
+    # problem status
+    SolverOptimal
+    SolverPrimalInfeasible
+    SolverDualInfeasible
+
+    # computation status
+    SolverExceededIterations
+    SolverNumericalInstability
+    SolverExceededMemory
+end
+
+@enum IterateStatus begin
+    IterateUndefined
+
+    IterateOptimal
+    IterateFeasible
+    IterateInfeasible
+end
+
+
 #================
     SOLUTION
 ================#
@@ -160,25 +186,34 @@ mutable struct IplpSolver{T}
 
     iter::Iterate{T}
     res::Residuals{T}
-    tol::Tolerances{T}
+    tols::Tolerances{T}
 
     niter::Int # number of iterations
-    status::Bool
+
+    # status
+    status::SolverStatus
+    status_primal::IterateStatus
+    status_dual::IterateStatus
 
     # TODO: keep track of the primal and dual bounds?
 
     function IplpSolver{T}(
         lp::StandardProblem,
         iter::Iterate{T},
-        tol::Tolerances{T}
+        tols::Tolerances{T}
     ) where T <: Real
         solv = new{T}()
 
         solv.lp = lp
         solv.iter = iter
         solv.res = Residuals{T}()
+        solv.tols = tols
+        
         solv.niter = 0
-        solv.status = false
+
+        solv.status = SolverUndefined
+        solv.status_primal = IterateUndefined
+        solv.status_dual = IterateUndefined
 
         return solv
     end
