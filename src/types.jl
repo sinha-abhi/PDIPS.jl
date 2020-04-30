@@ -107,13 +107,12 @@ mutable struct Iterate{T}
 
     μ::T # duality measure
 
-    # create the starting point by default
-    # (x, λ, s, τ, κ) = (e, 0, e, 1, 1)
+    # allocate memory for all vectors
     Iterate{T}(nc::Int, nv::Int, nu::Int) where T = new{T}(
         nc, nv, nu,
-        ones(T, nv), ones(T, nu),
-        ones(T, nc), ones(T, nv), ones(T, nu),
-        oneunit(T), oneunit(T), zero(T)
+        zeros(T, nv), zeros(T, nu),
+        zeros(T, nc), zeros(T, nv), zeros(T, nu),
+        zero(T), zero(T), zero(T)
     )
 end
 
@@ -166,9 +165,13 @@ mutable struct IplpSolver{T}
     niter::Int # number of iterations
     status::Bool
 
-    function IplpSolver{T}(lp::StandardProblem,
-                           iter::Iterate{T},
-                           tol::Tolerances{T}) where T <: Real
+    # TODO: keep track of the primal and dual bounds?
+
+    function IplpSolver{T}(
+        lp::StandardProblem,
+        iter::Iterate{T},
+        tol::Tolerances{T}
+    ) where T <: Real
         solv = new{T}()
 
         solv.lp = lp
