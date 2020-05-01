@@ -3,7 +3,7 @@
 
 Convert from IplpProblem to IplpStandardProblem.
 """
-function reformulate(lp::AbstractProblem)
+function reformulate(lp::AbstractProblem{T}) where T
     if isa(lp, AbstractStandardProblem)
         return lp
     end
@@ -45,15 +45,15 @@ function reformulate(lp::AbstractProblem)
     c = Vector{T}(undef, nv + free)
 
     free = 0
-    up = 0
+    ub = 0
     nzv = 0
     for (j, (l, h)) in enumerate(zip(lp.lo, lp.hi))
-        column = lp.cols[i] # current column
+        column = lp.cols[j] # current column
 
         if l == -Inf && h == Inf
             # free variable
             # split into positive and negative parts: x = x⁺ - x⁻
-            c[j + free]  = lp.c[i]
+            c[j + free]  = lp.c[j]
             for (i, v) in zip(column.ind, column.nzval)
                 nzv += 1
                 I[nzv] = i
@@ -61,7 +61,7 @@ function reformulate(lp::AbstractProblem)
                 V[nzv] = v
             end
 
-            c[j + free + 1] = -lp.c[i]
+            c[j + free + 1] = -lp.c[j]
             for (i, v) in zip(column.ind, column.nzval)
                 nzv += 1
                 I[nzv] = i
@@ -82,7 +82,7 @@ function reformulate(lp::AbstractProblem)
                 V[nzv] = v
             end
 
-            up += 1
+            ub += 1
             ind_ub[ub] = j + free
             val_ub[ub] = h - l
         elseif l == -Inf && isfinite(h)
@@ -145,7 +145,7 @@ function starting_pt!(iter::Iterate{T}) where T
 end
 
 function duality!(i::Iterate{T}) where T
-    iter.μ = (
+    i.μ = (
         (i.τ * i.κ
         + dot(i.x, i.s)
         + dot(i.v, i.w))
@@ -157,12 +157,12 @@ end
 
 function get_solution(solv::Solver{T}, org::AbstractProblem) where T
     sln = Solution{T}()
-    sln.status = solv.status
-
-    # TODO: recover solution to original problem from std form
-    # sln.x =
+    sln.status = solv.status == SolverOptimal
 
     slp = solv.lp
+
+    # TODO: recover solution to original problem from std form
+
     sln.A_std = slp.A
     sln.b_std = slp.b
     sln.c_std = slp.c

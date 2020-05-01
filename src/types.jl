@@ -8,8 +8,8 @@ mutable struct Column{T}
     Column{T}() where T = new{T}(Int[], T[])
 end
 
-abstract type AbstractProblem end
-abstract type AbstractStandardProblem <: AbstractProblem end
+abstract type AbstractProblem{T} end
+abstract type AbstractStandardProblem{T} <: AbstractProblem{T} end
 
 """
     Problem{T <: Real}
@@ -21,7 +21,7 @@ Suppose the constraint matrix A is m x n.
     `nc` is the number of constraints, i.e. nc = m.
     `nv` is the number of variables,   i.e. nv = n.
 """
-mutable struct Problem{T <: Real} <: AbstractProblem
+mutable struct Problem{T <: Real} <: AbstractProblem{T}
     nc::Int
     nv::Int
 
@@ -39,6 +39,23 @@ mutable struct Problem{T <: Real} <: AbstractProblem
     )
 end
 
+function Problem{T}(
+    nc::Int, nv::Int,
+    cols::Vector{Column{T}}, b::Vector{T},
+    c::Vector{T},
+    lo::Vector{T}, hi::Vector{T}
+) where T
+    lp = Problem{T}()
+    lp.nc = nc
+    lp.nv = nv
+    lp.cols = cols
+    lp.c = c
+    lp.lo = lo
+    lp.hi = hi
+
+    lp
+end
+
 """
     StandardProblem{T <: Real}
 
@@ -46,7 +63,7 @@ Data structure to respresent the standard form of a linear program:
     minimize    c' * x
     subject to  A * x = b and x ≧ 0
 """
-mutable struct StandardProblem{T} <: AbstractStandardProblem
+mutable struct StandardProblem{T} <: AbstractStandardProblem{T}
     nc::Int # number of constraints
     nv::Int # number of variables
     nu::Int # number of upper-bounded variables
@@ -67,9 +84,9 @@ end
     RESIDUALS
 ================#
 mutable struct Residuals{T}
-    rp::T # τ * b - A * x
-    ru::T # τ * u - v - U * x
-    rd::T # τ * c - A' * y - s + U * x
+    rp::Vector{T} # τ * b - A * x
+    ru::Vector{T} # τ * u - v - U * x
+    rd::Vector{T} # τ * c - A' * y - s + U * x
     rg::T # c' * x - b' * λ - u * w + κ
 
     # norms of above residuals
@@ -78,8 +95,8 @@ mutable struct Residuals{T}
     rdn::T
     rgn::T
 
-    Residuals{T}() where T = new{T}(
-        zero(T), zero(T), zero(T), zero(T),
+    Residuals{T}(nc::Int, nv::Int, nu::Int) where T = new{T}(
+        zeros(T, nc), zeros(T, nu), zeros(T, nv), zero(T),
         zero(T), zero(T), zero(T), zero(T),
     )
 end
@@ -161,7 +178,7 @@ end
 ================#
 mutable struct Solution{T}
     x::Vector{T}
-    status::SolverStatus
+    status::Bool
 
     # standard form
     A_std::Union{Nothing, AbstractMatrix{T}}
@@ -182,7 +199,7 @@ end
     SOLVER
 =============#
 mutable struct Solver{T}
-    lp::StandardProblem
+    lp::StandardProblem{T}
 
     iter::Iterate{T}
     res::Residuals{T}
@@ -210,7 +227,7 @@ mutable struct Solver{T}
 
         solv.lp = lp
         solv.iter = iter
-        solv.res = Residuals{T}()
+        solv.res = Residuals{T}(lp.nc, lp.nu, lp.nv)
         solv.tols = tols
 
         solv.niter = 0

@@ -10,8 +10,8 @@ function ipm_step!(solv::Solver{T}) where T
     A   = lp.A
     b   = lp.b
     c   = lp.c
-    ubi = lp.ubp_ind
-    ubv = lp.ubp_val
+    ubi = lp.upb_ind
+    ubv = lp.upb_val
 
     # scaling for problem data
     θxs = iter.s ./ iter.x
@@ -20,9 +20,9 @@ function ipm_step!(solv::Solver{T}) where T
 
     # regularization
     r_min = sqrt(eps(T)) # approx 1e-8
-    solv.regP .= max.(r_min, hsd.regP ./ 10)
-    solv.regD .= max.(r_min, hsd.regD ./ 10)
-    solv.regG  = max(r_min, hsd.regG / 10)
+    solv.regP .= max.(r_min, solv.regP ./ 10)
+    solv.regD .= max.(r_min, solv.regD ./ 10)
+    solv.regG  = max(r_min, solv.regG / 10)
 
     # factorization
     # make three attempts, after increasing regularization
@@ -30,7 +30,7 @@ function ipm_step!(solv::Solver{T}) where T
     attempt = 0
     while attempt < 4
         try
-            update_linear_solver!(solv.ls, θxs, solv.regP, solv.regP)
+            update_linear_solver!(solv.ls, θxs, solv.regP, solv.regD)
             break
         catch e
             if !(isa(e, PosDefException) || isa(e, ZeroPivotException))
@@ -54,10 +54,10 @@ function ipm_step!(solv::Solver{T}) where T
     Δ  = Iterate{T}(nc, nv, nu)
     # Δc = Iterate{T}(nc, nv, nu)
 
-    δx = zeros(T, nc)
-    δy = zeros(T, nv)
+    δx = zeros(T, nv)
+    δy = zeros(T, nc)
     δz = zeros(T, nu)
-    solve_augsys!(δx, δy, δz, solv.ls, θvw, ubi, b, c, uval)
+    solve_augsys!(δx, δy, δz, solv.ls, θvw, ubi, b, c, ubv)
     δ0 = solv.regG + iter.κ / iter.τ - dot(c, δx) + dot(b, δy) - dot(ubv, δz)
 
     # affine-scaling search direction
@@ -73,7 +73,7 @@ function ipm_step!(solv::Solver{T}) where T
     # γ = (1 - α)^2 * min(β, 1 - α)
     # η = 1 - γ
     α = max_alpha(iter, Δ)
-    γ = (oneunit(T) - γ)^2 * min(T(1e-1), oneunit(T) - α)
+    γ = (oneunit(T) - α)^2 * min(T(1e-1), oneunit(T) - α)
     η = 1 - γ
 
     # apply mehrotra corrector
@@ -96,7 +96,7 @@ function ipm_step!(solv::Solver{T}) where T
 end
 
 function solve!(solv::Solver{T}, maxiter::Int) where T
-    slp = solv.slp
+    slp = solv.lp
 
     while true
         # update residuals

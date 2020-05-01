@@ -137,7 +137,7 @@ function solve_augmented_system!(
     ξp::Vector{Float64}, ξd::Vector{Float64}
 )
     m, n = ls.m, ls.n
-    
+
     # Set-up right-hand side
     ξ = [ξd; ξp]
 
@@ -240,7 +240,7 @@ function update_linear_solver!(
     regP::AbstractVector{Float64},
     regD::AbstractVector{Float64}
 )
-    
+
     # Sanity checks
     length(θ) == ls.n || throw(DimensionMismatch(
         "θ has length $(length(θ)) but linear solver is for n=$(ls.n)."
@@ -283,7 +283,7 @@ function solve_augmented_system!(
 
     d = one(Float64) ./ (ls.θ .+ ls.regP)
     D = Diagonal(d)
-    
+
     # Set-up right-hand side
     ξ_ = ξp .+ ls.A * (D * ξd)
 
@@ -301,6 +301,6 @@ function solve_augmented_system!(
     # resD = - D \ dx + ls.A' * dy - ξd
     # println("\n|resP| = $(norm(resP, Inf))\n|resD| = $(norm(resD, Inf))")
 
-    
+
     return nothing
 end

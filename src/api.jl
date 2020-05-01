@@ -9,7 +9,7 @@
 Load problem data into a `Problem{T}`.
 """
 function load_problem!(
-    lp::AbstractProblem,
+    lp::AbstractProblem{T},
     A::AbstractMatrix{T},
     b::Vector{T},
     c::Vector{T},
@@ -32,15 +32,22 @@ function load_problem!(
     cols = Vector{Column{T}}(undef, size(A, 2))
     for (j, col) in enumerate(eachcol(A))
         cols[j] = Column{T}()
-        for (i, nzv) in enumerate(col)
+        for (i, v) in enumerate(col)
             if v != 0
                 push!(cols[j].ind, i)
-                push!(cols[j].nzval, nzv)
+                push!(cols[j].nzval, v)
             end
         end
     end
 
-    lp = Problem{T}(nc, nv, cols, b, c, lo, hi)
+    lp.nc   = nc
+    lp.nv   = nv
+    lp.cols = cols
+    lp.b    = b
+    lp.c    = c
+    lp.lo   = lo
+    lp.hi   = hi
+
     nothing
 end
 
@@ -50,7 +57,7 @@ end
 Solve the linear program. Returns a `Solution`.
 """
 function solve(
-    lp::AbstractProblem,
+    lp::AbstractProblem{T},
     maxiter::Int = 100,
     tol::T = 1e-8
 ) where T <: Real

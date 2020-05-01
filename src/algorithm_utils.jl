@@ -18,10 +18,10 @@ function solve_newton_system!(
     b::Vector{T},
     c::Vector{T},
     ubi::Vector{Int},
-    uval::Vector{T},
+    ubv::Vector{T},
     δx::Vector{T},
     δy::Vector{T},
-    δz::Vector{T},
+    δw::Vector{T},
     δ0::T,
     iter::Iterate{T},
     ξp::Vector{T},
@@ -78,7 +78,7 @@ function solve_augsys!(
     solve_augmented_system!(δx, δy, ls, ξp, _ξd)
 
     δz .-= ξu
-    @views δz .+= dx[ubi]
+    @views δz .+= δx[ubi]
     δz .*= θvw
 
     nothing
@@ -90,7 +90,7 @@ function update_residuals!(
     A::AbstractMatrix{T},
     b::Vector{T},
     c::Vector{T},
-    ubi::Vector{T},
+    ubi::Vector{Int},
     ubv::Vector{T}
 ) where T
     # calculate `rp` and its norm
@@ -102,7 +102,7 @@ function update_residuals!(
     # calculate `ru` and its norm
     rmul!(res.ru, zero(T))                       # zero out ru
     axpy!(-oneunit(T), iter.v, res.ru)           # ru = -w + ru = -w
-    @views axpy!(-oneunit(T), pt.x[ubi], res.ru) # ru = ru - x
+    @views axpy!(-oneunit(T), iter.x[ubi], res.ru) # ru = ru - x
     axpy!(iter.τ, ubv, res.ru)                   # ru = τ * u + ru
     res.run = norm(res.ru)
 
@@ -111,12 +111,12 @@ function update_residuals!(
     rmul!(res.rd, -oneunit(T))                   # rd = - rd = - A * λ
     axpy!(iter.τ, c, res.rd)                     # rd = τ * c + rd
     axpy!(-oneunit(T), iter.s, res.rd)           # rd = rd - s
-    @views axpy!(oneunit(T), pt.w, res.rd[uind]) # rd = w + rd
+    @views axpy!(oneunit(T), iter.w, res.rd[ubi]) # rd = w + rd
 
     # calculate `rg` and its norm
     # rg = c'x - (b'λ + u'w) + κ
     res.rg = iter.κ + dot(c, iter.x) - dot(b, iter.λ) + dot(ubv, iter.w)
-    res.rgn = norm(rg)
+    res.rgn = norm(res.rg)
 
     nothing
 end
@@ -129,13 +129,13 @@ function check_status!(
     A::AbstractMatrix{T},
     b::Vector{T},
     c::Vector{T},
-    ubi::Vector{T},
+    ubi::Vector{Int},
     ubv::Vector{T}
 ) where T
     # _p = max(|rp| / (τ * (1 + |b|)), |ru| / (τ * (1 + |u|)))
     _p = max(
-        res.rpn / (iter.τ * (oneunit(T) + norm(b, Inf)),
-        res.run / (iter.τ * (oneunit(T) + norm(ubv, Inf))))
+        res.rpn / (iter.τ * (oneunit(T) + norm(b, Inf))),
+        res.run / (iter.τ * (oneunit(T) + norm(ubv, Inf)))
     )
 
     # _d = |rd| / (τ * (1 + |c|))
@@ -151,7 +151,7 @@ function check_status!(
     solv.status_dual   = _d <= tols.εd ? IterateFeasible : IterateUndefined
 
     # check optimality
-    if _p <= tols.εp && _d <= tols.εd && _g <= εg
+    if _p <= tols.εp && _d <= tols.εd && _g <= tols.εg
         solv.status        = SolverOptimal
         solv.status_primal = IterateOptimal
         solv.status_dual   = IterateOptimal
@@ -185,7 +185,7 @@ function check_status!(
 end
 
 function _max_alpha(v::Vector{T}, dv::Vector{T}) where T
-    n = size(x, 1)
+    n = size(v, 1)
     size(dv, 1) == n || throw(DimensionMismatch(
         "expected vector of length $n"
     ))
