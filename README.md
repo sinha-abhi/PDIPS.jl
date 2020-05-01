@@ -1,5 +1,4 @@
 # Primal-Dual Interior-Point Solver (PDIPS)
-
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/sinha-abhi/PDIPS.jl/blob/master/LICENSE)
 
 `PDIPS` is an implementation of the homogeneous self-dual interior-point
@@ -20,8 +19,9 @@ s.t    Ax = b
        0 <= x.
 ```
 
+Implemented for the final project of *Computational Methods in Optimization*
+with [David Gleich](https://www.cs.purdue.edu/homes/dgleich/) at Purdue.
 
-#### References
-
-For a detailed explanation of the algorithm see
-[Tulip.jl](https://github.com/ds4dm/Tulip.jl).
+### Reference
+For a detailed explanation (and a more general implementation)
+of the algorithm see [Tulip.jl](https://github.com/ds4dm/Tulip.jl).

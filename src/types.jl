@@ -126,7 +126,7 @@ mutable struct Tolerances{T}
     εg::T
     εi::T
 
-    Tolerances{T}(tol::T = sqrt(eps{T})) where T = new{T}(tol, tol, tol, tol)
+    Tolerances{T}(tol::T = sqrt(eps(T))) where T = new{T}(tol, tol, tol, tol)
 end
 
 

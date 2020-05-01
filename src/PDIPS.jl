@@ -21,7 +21,6 @@ export
     Problem,
     StandardProblem,
     Solution,
-    Solver,
 
     # methods
     solve,

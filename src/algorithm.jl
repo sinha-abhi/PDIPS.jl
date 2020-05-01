@@ -1,6 +1,23 @@
-# TODO: implement steps
+# TODO: finish implementation of steps
 function ipm_step!(solv::Solver{T}) where T
+    # get scaling for problem data
 
+    # update regularization
+
+    # try to update factorization
+
+    # get predictor search direction
+
+    # get affine-scaling search direction
+
+    # get step length for affine-scaling direction
+
+    # apply mehrotra corrector step
+
+    # update iterate
+
+
+    nothing
 end
 
 function solve!(solv::Solver{T}, maxiter::Int) where T
