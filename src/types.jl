@@ -8,11 +8,11 @@ mutable struct Column{T}
     Column{T}() where T = new{T}(Int[], T[])
 end
 
-abstract type Problem end
-abstract type StandardProblem <: Problem end
+abstract type AbstractProblem end
+abstract type AbstractStandardProblem <: AbstractProblem end
 
 """
-    IplpProblem{T <: Real}
+    Problem{T <: Real}
 
 Data structure to represent the linear program:
     minmize     c' * x
@@ -21,7 +21,7 @@ Suppose the constraint matrix A is m x n.
     `nc` is the number of constraints, i.e. nc = m.
     `nv` is the number of variables,   i.e. nv = n.
 """
-mutable struct IplpProblem{T <: Real} <: Problem
+mutable struct Problem{T <: Real} <: AbstractProblem
     nc::Int
     nv::Int
 
@@ -32,7 +32,7 @@ mutable struct IplpProblem{T <: Real} <: Problem
     lo::Vector{T}
     hi::Vector{T}
 
-    IplpProblem{T}() where T <: Real = new{T}(
+    Problem{T}() where T <: Real = new{T}(
         0, 0,
         Column{T}[], T[], T[],
         T[], T[]
@@ -40,13 +40,13 @@ mutable struct IplpProblem{T <: Real} <: Problem
 end
 
 """
-    IplpStandardProblem{T <: Real}
+    StandardProblem{T <: Real}
 
 Data structure to respresent the standard form of a linear program:
     minimize    c' * x
     subject to  A * x = b and x ≧ 0
 """
-mutable struct IplpStandardProblem{T} <: StandardProblem
+mutable struct StandardProblem{T} <: AbstractStandardProblem
     nc::Int # number of constraints
     nv::Int # number of variables
     nu::Int # number of upper-bounded variables
@@ -159,9 +159,9 @@ end
 #================
     SOLUTION
 ================#
-mutable struct IplpSolution{T}
+mutable struct Solution{T}
     x::Vector{T}
-    flag::Bool
+    status::SolverStatus
 
     # standard form
     A_std::Union{Nothing, AbstractMatrix{T}}
@@ -171,7 +171,7 @@ mutable struct IplpSolution{T}
     λ_std::Vector{T}
     s_std::Vector{T}
 
-    IplpSolution{T}() where T = new{T}(
+    Solution{T}() where T = new{T}(
         T[], false,
         nothing, T[], T[], T[], T[], T[]
     )
@@ -181,7 +181,7 @@ end
 #=============
     SOLVER
 =============#
-mutable struct IplpSolver{T}
+mutable struct Solver{T}
     lp::StandardProblem
 
     iter::Iterate{T}
@@ -195,9 +195,13 @@ mutable struct IplpSolver{T}
     status_primal::IterateStatus
     status_dual::IterateStatus
 
-    # TODO: keep track of the primal and dual bounds?
+    # linear solver -- adapted from Tulip.jl
+    ls::AbstractLinearSolver{T}
+    regP::Vector{T} # primal regularization
+    regD::Vector{T} # dual regularization
+    regG::T         # gap regularization
 
-    function IplpSolver{T}(
+    function Solver{T}(
         lp::StandardProblem,
         iter::Iterate{T},
         tols::Tolerances{T}
@@ -208,13 +212,25 @@ mutable struct IplpSolver{T}
         solv.iter = iter
         solv.res = Residuals{T}()
         solv.tols = tols
-        
+
         solv.niter = 0
 
         solv.status = SolverUndefined
         solv.status_primal = IterateUndefined
         solv.status_dual = IterateUndefined
 
-        return solv
+        # defaults to CHOLMOD backend for Float64 type
+        solv.ls = AbstractLinearSolver(
+            DefaultBackend(),
+            DefaultSystem(),
+            lp.A
+        )
+
+        # starting regularizations
+        solv.regP = ones(T, lp.nv)
+        solv.regD = ones(T, lp.nc)
+        solv.regG = oneunit(T)
+
+        solv
     end
 end

@@ -1,15 +1,15 @@
 """
-    load_problem!(lp::IplpProblem{T},
+    load_problem!(lp::AbstractProblem,
                   A::AbstractMatrix{T},
                   b::Vector{T},
                   c::Vector{T},
                   lo::Vector{T},
                   hi::Vector{T}) where T <: Real
 
-Load problem data into an `IplpProblem{T}`.
+Load problem data into a `Problem{T}`.
 """
 function load_problem!(
-    lp::Problem,
+    lp::AbstractProblem,
     A::AbstractMatrix{T},
     b::Vector{T},
     c::Vector{T},
@@ -40,17 +40,17 @@ function load_problem!(
         end
     end
 
-    lp = IplpProblem{T}(nc, nv, cols, b, c, lo, hi)
+    lp = Problem{T}(nc, nv, cols, b, c, lo, hi)
     nothing
 end
 
 """
-    solve(lp::Problem, maxiter::Int = 100, tol::T) where T
+    solve(lp::AbstractProblem, maxiter::Int = 100, tol::T) where T
 
-Solve the linear program. Returns an `IplpSolution`.
+Solve the linear program. Returns a `Solution`.
 """
 function solve(
-    lp::Problem,
+    lp::AbstractProblem,
     maxiter::Int = 100,
     tol::T = 1e-8
 ) where T <: Real
@@ -64,7 +64,7 @@ function solve(
     duality!(iter)
 
     tols = Tolerances{T}(tol)
-    solv = IplpSolver{T}(slp, iter, tols)
+    solv = Solver{T}(slp, iter, tols)
 
     # call internal HSD algorithm
     solve!(solv, maxiter)

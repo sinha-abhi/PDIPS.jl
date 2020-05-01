@@ -1,6 +1,6 @@
-@testset "IplpProblem" begin
+@testset "Problem" begin
     # object creation
-    lp = IplpProblem{Int}()
+    lp = Problem{Int}()
     A = sprand(Int, 3, 5, 0.5)
     b = rand(Int, 3)
     c = rand(Int, 5)

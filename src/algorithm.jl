@@ -1,9 +1,9 @@
 # TODO: implement steps
-function ipm_step!(solv::IplpSolver{T}) where T
+function ipm_step!(solv::Solver{T}) where T
 
 end
 
-function solve!(solv::IplpSolver{T}, maxiter::Int) where T
+function solve!(solv::Solver{T}, maxiter::Int) where T
     slp = solv.slp
 
     while true
