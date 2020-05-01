@@ -1,3 +1,89 @@
+function update_iterate!(iter::Iterate{T}, Δ::Iterate{T}, α::T) where T
+    iter.x .+= α .* Δ.x
+    iter.v .+= α .* Δ.v
+    iter.λ .+= α .* Δ.λ
+    iter.s .+= α .* Δ.s
+    iter.w .+= α .* Δ.w
+
+    iter.τ += α * Δ.τ
+    iter.κ += α * Δ.κ
+
+    nothing
+end
+
+function solve_newton_system!(
+    Δ::Iterate{T}, # overwritten during solve
+    ls::AbstractLinearSolver{T},
+    θvw::Vector{T},
+    b::Vector{T},
+    c::Vector{T},
+    ubi::Vector{Int},
+    uval::Vector{T},
+    δx::Vector{T},
+    δy::Vector{T},
+    δz::Vector{T},
+    δ0::T,
+    iter::Iterate{T},
+    ξp::Vector{T},
+    ξu::Vector{T},
+    ξd::Vector{T},
+    ξg::T,
+    ξxs::Vector{T},
+    ξvw::Vector{T},
+    ξτκ::T
+) where T
+    _ξd   = copy(ξd)
+    _ξu   = copy(ξu)
+    _ξd .-= (ξxs ./ iter.x)
+    _ξu .-= (ξvw ./ iter.w)
+
+    solve_augsys!(Δ.x, Δ.λ, Δ.w, ls, θvw, ubi, ξp, _ξd, _ξu)
+
+    Δ.τ = (ξg + (ξτκ / iter.τ) + dot(c, Δ.x) - dot(b, Δ.λ) + dot(ubv, Δ.w)) / δ0
+    Δ.κ = (ξτκ - iter.κ  * Δ.τ) / iter.τ
+
+    Δ.x .+= (Δ.τ .* δx)
+    Δ.λ .+= (Δ.τ .* δy)
+    Δ.w .+= (Δ.τ .* δw)
+
+    # δs = inv(X) * (ξxs - Sδx)
+    Δ.s  .= ξxs
+    Δ.s .-= (iter.s .* Δ.x)
+    Δ.s ./= iter.x
+
+    # δw = inv(W) * (ξvw - v .* Δx)
+    Δ.v  .= ξvw
+    Δ.v .-= (iter.v .* Δ.w)
+    Δ.v ./= iter.w
+
+    nothing
+end
+
+function solve_augsys!(
+    δx::Vector{T}, # overwritten during solve
+    δy::Vector{T}, # overwritten during solve
+    δz::Vector{T}, # overwritten during solve
+    ls::AbstractLinearSolver{T},
+    θvw::Vector{T},
+    ubi::Vector{Int},
+    ξp::Vector{T},
+    ξd::Vector{T},
+    ξu::Vector{T}
+) where T
+    δz .= zero(T)
+
+    _ξd = copy(ξd)
+    @views _ξd[ubi] .-= (ξu .* θvw)
+
+    solve_augmented_system!(δx, δy, ls, ξp, _ξd)
+
+    δz .-= ξu
+    @views δz .+= dx[ubi]
+    δz .*= θvw
+
+    nothing
+end
+
 function update_residuals!(
     res::Residuals{T},
     iter::Iterate{T},
@@ -98,7 +184,7 @@ function check_status!(
     nothing
 end
 
-function max_alpha_step(v::Vector{T}, dv::Vector{T}) where T
+function _max_alpha(v::Vector{T}, dv::Vector{T}) where T
     n = size(x, 1)
     size(dv, 1) == n || throw(DimensionMismatch(
         "expected vector of length $n"
@@ -117,16 +203,16 @@ function max_alpha_step(v::Vector{T}, dv::Vector{T}) where T
     α
 end
 
-function max_alpha_step(iter::Iterate{T}, Δ::Iterate{T}) where T
+function max_alpha(iter::Iterate{T}, Δ::Iterate{T}) where T
     α_τ = Δ.τ < zero(T) ? (-iter.τ / Δ.τ) : oneunit(T)
     α_κ = Δ.κ < zero(T) ? (-iter.κ / Δ.κ) : oneunit(T)
 
     α = min(
         oneunit(T),
-        max_alpha_step(iter.x, Δ.x),
-        max_alpha_step(iter.v, Δ.v),
-        max_alpha_step(iter.s, Δ.s),
-        max_alpha_step(iter.w, Δ.w),
+        _max_alpha(iter.x, Δ.x),
+        _max_alpha(iter.v, Δ.v),
+        _max_alpha(iter.s, Δ.s),
+        _max_alpha(iter.w, Δ.w),
         α_τ, α_κ
     )
 end
