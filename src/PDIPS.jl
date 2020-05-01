@@ -3,8 +3,6 @@ module PDIPS
 using LinearAlgebra
 using SparseArrays
 
-# TODO: ADD DOCUMENTATION -- link to report
-
 # LinearSolvers.jl
 include("linalg/LinearSolvers.jl")
 
@@ -15,7 +13,6 @@ include("algorithm.jl")
 
 include("api.jl")
 
-# TODO: export types and methods
 export
     # types
     AbstractProblem,

@@ -41,7 +41,8 @@ function reformulate(lp::AbstractProblem{T}) where T
     ind_ub = Vector{Int}(undef, ub)
     val_ub = Vector{T}(undef, ub)
 
-    b = Vector{T}(undef, lp.nc)
+    # b = Vector{T}(undef, lp.nc)
+    b = copy(lp.b)
     c = Vector{T}(undef, nv + free)
 
     free = 0
@@ -100,6 +101,8 @@ function reformulate(lp::AbstractProblem{T}) where T
             # l ⩽ x
             c[j + free] = lp.c[j]
             for (i, v) in zip(column.ind, column.nzval)
+                b[i] -= (v * l)
+
                 nzv += 1
                 I[nzv] = i
                 J[nzv] = j + free
@@ -161,7 +164,23 @@ function get_solution(solv::Solver{T}, org::AbstractProblem) where T
 
     slp = solv.lp
 
-    # TODO: recover solution to original problem from std form
+    ub = 0
+    free = 0
+    sln.x = zeros(T, org.nv)
+    inv_τ = inv(solv.iter.τ)
+    for (j, (l, h)) in enumerate(zip(org.lo, org.hi))
+        _j = j + free
+        if l == -Inf && h == Inf
+            sln.x[j] = (solv.iter.x[_j] - solv.iter.x[_j + 1]) * inv_τ
+        elseif l == -Inf && isfinite(h)
+            sln.x[j] = u - solv.iter.x[_j] * inv_τ
+        elseif isfinite(l) && isfinite(h)
+            ub += 1
+            sln.x[j] = l + solv.iter.x[_j] * inv_τ
+        else
+            sln.x[j] = l + solv.iter.x[_j] * inv_τ
+        end
+    end
 
     sln.A_std = slp.A
     sln.b_std = slp.b
