@@ -1,6 +1,6 @@
 using PDIPS
 
-using LinearAlgebra 
+using LinearAlgebra
 using Printf
 using SparseArrays
 using Test

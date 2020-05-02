@@ -7,7 +7,7 @@
                 1.0 <= x2 <= 5.0
     =#
     A  = [0.3 0.1; 0.6 0.4]
-    A  = sparse(A) # currently only support solvers for sparse matrices
+    A  = sparse(A) # solver current only supports sparse matrices
     b  = [2.7, 6.0]
     c  = [0.4, 0.5]
     lo = [3.0, 1.0]

@@ -227,7 +227,7 @@ mutable struct Solver{T}
 
         solv.lp = lp
         solv.iter = iter
-        solv.res = Residuals{T}(lp.nc, lp.nu, lp.nv)
+        solv.res = Residuals{T}(lp.nc, lp.nv, lp.nu)
         solv.tols = tols
 
         solv.niter = 0
