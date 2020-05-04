@@ -1,3 +1,12 @@
 *.swp
 *.old
 Manifest.toml
+
+# tex files
+*.aux
+*.bbl
+*.blg
+*.idx
+*.log
+*.out
+*.toc

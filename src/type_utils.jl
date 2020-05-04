@@ -47,7 +47,7 @@ function reformulate(lp::AbstractProblem{T}) where T <: Real
     free = 0
     ub = 0
     nzv = 0
-    for (j, (l, h)) in enumerate(zip(lp.lo, lp.hi))
+    @inbounds for (j, (l, h)) in enumerate(zip(lp.lo, lp.hi))
         column = lp.cols[j] # current column
 
         if l == -Inf && h == Inf
