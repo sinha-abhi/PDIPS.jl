@@ -1,5 +1,4 @@
-# TODO: finish implementation of steps
-function ipm_step!(solv::Solver{T}) where T
+function ipm_step!(solv::Solver{T}) where T <: Real
     iter = solv.iter
     lp   = solv.lp
     res  = solv.res
@@ -95,7 +94,7 @@ function ipm_step!(solv::Solver{T}) where T
     nothing
 end
 
-function solve!(solv::Solver{T}, maxiter::Int) where T
+function solve!(solv::Solver{T}, maxiter::Int) where T <: Real
     slp = solv.lp
 
     while true

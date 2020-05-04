@@ -3,7 +3,7 @@
 
 Convert from IplpProblem to IplpStandardProblem.
 """
-function reformulate(lp::AbstractProblem{T}) where T
+function reformulate(lp::AbstractProblem{T}) where T <: Real
     if isa(lp, AbstractStandardProblem)
         return lp
     end
@@ -41,7 +41,6 @@ function reformulate(lp::AbstractProblem{T}) where T
     ind_ub = Vector{Int}(undef, ub)
     val_ub = Vector{T}(undef, ub)
 
-    # b = Vector{T}(undef, lp.nc)
     b = copy(lp.b)
     c = Vector{T}(undef, nv + free)
 
@@ -130,7 +129,7 @@ fill the desired values.
 The starting point is:
     (x, λ, s, τ, κ) = (e, 0, e, 1, 1).
 """
-function starting_pt!(iter::Iterate{T}) where T
+function starting_pt!(iter::Iterate{T}) where T <: Real
     # primal
     iter.x .= oneunit(T)
     iter.v .= oneunit(T)
@@ -147,7 +146,7 @@ function starting_pt!(iter::Iterate{T}) where T
     nothing
 end
 
-function duality!(i::Iterate{T}) where T
+function duality!(i::Iterate{T}) where T <: Real
     i.μ = (
         (i.τ * i.κ
         + dot(i.x, i.s)
@@ -158,7 +157,7 @@ function duality!(i::Iterate{T}) where T
     nothing
 end
 
-function get_solution(solv::Solver{T}, org::AbstractProblem) where T
+function get_solution(solv::Solver{T}, org::AbstractProblem) where T <: Real
     sln = Solution{T}()
     sln.status = solv.status == SolverOptimal
 

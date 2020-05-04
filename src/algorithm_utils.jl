@@ -1,4 +1,4 @@
-function update_iterate!(iter::Iterate{T}, Δ::Iterate{T}, α::T) where T
+function update_iterate!(iter::Iterate{T}, Δ::Iterate{T}, α::T) where T <: Real
     iter.x .+= α .* Δ.x
     iter.v .+= α .* Δ.v
     iter.λ .+= α .* Δ.λ
@@ -31,7 +31,7 @@ function solve_newton_system!(
     ξxs::Vector{T},
     ξvw::Vector{T},
     ξτκ::T
-) where T
+) where T <: Real
     _ξd   = copy(ξd)
     _ξu   = copy(ξu)
     _ξd .-= (ξxs ./ iter.x)
@@ -69,7 +69,7 @@ function solve_augsys!(
     ξp::Vector{T},
     ξd::Vector{T},
     ξu::Vector{T}
-) where T
+) where T <: Real
     δz .= zero(T)
 
     _ξd = copy(ξd)
@@ -92,7 +92,7 @@ function update_residuals!(
     c::Vector{T},
     ubi::Vector{Int},
     ubv::Vector{T}
-) where T
+) where T <: Real
     # calculate `rp` and its norm
     mul!(res.rp, A, iter.x)    # rp = A * x
     rmul!(res.rp, -oneunit(T)) # rp = - rp = - A * x
@@ -131,7 +131,7 @@ function check_status!(
     c::Vector{T},
     ubi::Vector{Int},
     ubv::Vector{T}
-) where T
+) where T <: Real
     # _p = max(|rp| / (τ * (1 + |b|)), |ru| / (τ * (1 + |u|)))
     _p = max(
         res.rpn / (iter.τ * (oneunit(T) + norm(b, Inf))),
@@ -184,7 +184,7 @@ function check_status!(
     nothing
 end
 
-function _max_alpha(v::Vector{T}, dv::Vector{T}) where T
+function _max_alpha(v::Vector{T}, dv::Vector{T}) where T <: Real
     n = size(v, 1)
     size(dv, 1) == n || throw(DimensionMismatch(
         "expected vector of length $n"
@@ -203,7 +203,7 @@ function _max_alpha(v::Vector{T}, dv::Vector{T}) where T
     α
 end
 
-function max_alpha(iter::Iterate{T}, Δ::Iterate{T}) where T
+function max_alpha(iter::Iterate{T}, Δ::Iterate{T}) where T <: Real
     α_τ = Δ.τ < zero(T) ? (-iter.τ / Δ.τ) : oneunit(T)
     α_κ = Δ.κ < zero(T) ? (-iter.κ / Δ.κ) : oneunit(T)
 

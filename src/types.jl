@@ -8,8 +8,8 @@ mutable struct Column{T}
     Column{T}() where T = new{T}(Int[], T[])
 end
 
-abstract type AbstractProblem{T} end
-abstract type AbstractStandardProblem{T} <: AbstractProblem{T} end
+abstract type AbstractProblem{T <: Real} end
+abstract type AbstractStandardProblem{T <: Real} <: AbstractProblem{T} end
 
 """
     Problem{T <: Real}
@@ -44,7 +44,7 @@ function Problem{T}(
     cols::Vector{Column{T}}, b::Vector{T},
     c::Vector{T},
     lo::Vector{T}, hi::Vector{T}
-) where T
+) where T <: Real
     lp = Problem{T}()
     lp.nc = nc
     lp.nv = nv
@@ -63,7 +63,7 @@ Data structure to respresent the standard form of a linear program:
     minimize    c' * x
     subject to  A * x = b and x ≧ 0
 """
-mutable struct StandardProblem{T} <: AbstractStandardProblem{T}
+mutable struct StandardProblem{T <: Real} <: AbstractStandardProblem{T}
     nc::Int # number of constraints
     nv::Int # number of variables
     nu::Int # number of upper-bounded variables
@@ -74,8 +74,6 @@ mutable struct StandardProblem{T} <: AbstractStandardProblem{T}
     A::SparseMatrixCSC{T}
     b::Vector{T}
     c::Vector{T}
-
-    # TODO: add constructor(s)?
 end
 
 
@@ -83,7 +81,7 @@ end
 #================
     RESIDUALS
 ================#
-mutable struct Residuals{T}
+mutable struct Residuals{T <: Real}
     rp::Vector{T} # τ * b - A * x
     ru::Vector{T} # τ * u - v - U * x
     rd::Vector{T} # τ * c - A' * y - s + U * x
@@ -95,7 +93,7 @@ mutable struct Residuals{T}
     rdn::T
     rgn::T
 
-    Residuals{T}(nc::Int, nv::Int, nu::Int) where T = new{T}(
+    Residuals{T}(nc::Int, nv::Int, nu::Int) where T <: Real = new{T}(
         zeros(T, nc), zeros(T, nu), zeros(T, nv), zero(T),
         zero(T), zero(T), zero(T), zero(T),
     )
@@ -105,7 +103,7 @@ end
 #==============
     ITERATE
 ==============#
-mutable struct Iterate{T}
+mutable struct Iterate{T <: Real}
     nc::Int # number of constraints
     nv::Int # number of variables
     nu::Int # number of upper-bounded variables
@@ -125,7 +123,7 @@ mutable struct Iterate{T}
     μ::T # duality measure
 
     # allocate memory for all vectors
-    Iterate{T}(nc::Int, nv::Int, nu::Int) where T = new{T}(
+    Iterate{T}(nc::Int, nv::Int, nu::Int) where T <: Real = new{T}(
         nc, nv, nu,
         zeros(T, nv), zeros(T, nu),
         zeros(T, nc), zeros(T, nv), zeros(T, nu),
@@ -137,13 +135,13 @@ end
 #=================
     TOLERANCES
 =================#
-mutable struct Tolerances{T}
+mutable struct Tolerances{T <: Real}
     εp::T
     εd::T
     εg::T
     εi::T
 
-    Tolerances{T}(tol::T = sqrt(eps(T))) where T = new{T}(tol, tol, tol, tol)
+    Tolerances{T}(tol::T = sqrt(eps(T))) where T <: Real = new{T}(tol, tol, tol, tol)
 end
 
 
@@ -176,7 +174,7 @@ end
 #================
     SOLUTION
 ================#
-mutable struct Solution{T}
+mutable struct Solution{T <: Real}
     x::Vector{T}
     status::Bool
 
@@ -198,7 +196,7 @@ end
 #=============
     SOLVER
 =============#
-mutable struct Solver{T}
+mutable struct Solver{T <: Real}
     lp::StandardProblem{T}
 
     iter::Iterate{T}

@@ -59,7 +59,7 @@ Solve the linear program. Returns a `Solution`.
 function solve(
     lp::AbstractProblem{T},
     maxiter::Int = 100,
-    tol::T = 1e-8
+    tol::T = sqrt(eps(T))
 ) where T <: Real
     # convert problem to standard form
     slp = reformulate(lp)
