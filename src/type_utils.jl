@@ -229,7 +229,7 @@ function get_solution(
                 b - u; c; u
             ])
         )
-        @printf("KKT normalized residual norm: %f\n", kkt)
+        @printf("KKT normalized residual: %f\n", kkt)
     end
 
     return sln
