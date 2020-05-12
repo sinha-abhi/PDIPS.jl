@@ -1,6 +1,7 @@
 module PDIPS
 
 using LinearAlgebra
+using Printf
 using SparseArrays
 
 # LinearSolvers.jl

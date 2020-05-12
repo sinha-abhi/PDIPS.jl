@@ -157,7 +157,11 @@ function duality!(i::Iterate{T}) where T <: Real
     nothing
 end
 
-function get_solution(solv::Solver{T}, org::AbstractProblem) where T <: Real
+function get_solution(
+    solv::Solver{T},
+    org::AbstractProblem;
+    verbose::Bool = true
+) where T <: Real
     sln = Solution{T}()
     sln.status = solv.status == SolverOptimal
 
@@ -189,6 +193,44 @@ function get_solution(solv::Solver{T}, org::AbstractProblem) where T <: Real
     sln.x_std = f_iter.x
     sln.λ_std = f_iter.λ
     sln.s_std = f_iter.s
+
+    # results of checking KKT conditions
+    if verbose
+        # construct U and u
+        ubi = slp.upb_ind
+        ubv = slp.upb_val
+        U = zeros(T, length(ubi), slp.nv)
+        u = zeros(T, length(ubi))
+        for i in ubi
+            U[i, i] = oneunit(T)
+            u[i] = ubv[i]
+        end
+
+        A = slp.A
+        b = slp.b
+        c = slp.c
+
+        x = f_iter.x
+        v = f_iter.v
+        λ = f_iter.λ
+        s = f_iter.s
+        w = f_iter.w
+
+        τ = f_iter.τ
+        κ = f_iter.κ
+
+        kkt = (
+            norm([
+                A' * λ + s - U' * w - c * τ;
+                A * x - b * τ;
+                U * x + v - u * τ;
+                x .* s;
+            ]) / norm([
+                b - u; c; u
+            ])
+        )
+        @printf("KKT normalized residual norm: %f\n", kkt)
+    end
 
     return sln
 end
