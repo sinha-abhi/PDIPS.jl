@@ -226,7 +226,7 @@ function get_solution(
                 U * x + v - u * τ;
                 x .* s;
             ]) / norm([
-                b - u; c; u
+                b; c; u
             ])
         )
         @printf("KKT normalized residual: %f\n", kkt)
