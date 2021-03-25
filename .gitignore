@@ -10,3 +10,5 @@ Manifest.toml
 *.log
 *.out
 *.toc
+*.tex
+*.bib

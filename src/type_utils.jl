@@ -199,8 +199,8 @@ function get_solution(
         # construct U and u
         ubi = slp.upb_ind
         ubv = slp.upb_val
-        U = zeros(T, length(ubi), slp.nv)
-        u = zeros(T, length(ubi))
+        U = zeros(T, slp.nu, slp.nv)
+        u = zeros(T, slp.nu)
         for i in ubi
             U[i, i] = oneunit(T)
             u[i] = ubv[i]
@@ -217,7 +217,6 @@ function get_solution(
         w = f_iter.w
 
         τ = f_iter.τ
-        κ = f_iter.κ
 
         kkt = (
             norm([
@@ -229,7 +228,6 @@ function get_solution(
                 b; c; u
             ])
         )
-        @printf("KKT normalized residual: %f\n", kkt)
     end
 
     return sln

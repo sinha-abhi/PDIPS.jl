@@ -1,7 +1,7 @@
 # Primal-Dual Interior-Point Solver (PDIPS)
 [![License](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://github.com/sinha-abhi/PDIPS.jl/blob/master/LICENSE)
 
-`PDIPS` is an implementation of the homogeneous self-dual interior-point
+`PDIPS` ([paper](PDIPS.pdf)) is an implementation of the homogeneous self-dual interior-point
 algorithm for solving linear optimization problems using interior-point methods.
 
 This implementation solves linear programs of the form

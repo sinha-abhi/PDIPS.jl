@@ -11,7 +11,7 @@
     b  = [2.7, 6.0]
     c  = [0.4, 0.5]
     lo = [3.0, 1.0]
-    hi = [10.0, 5.0]
+    hi = [10.0, Inf]
     lp = Problem{Float64}()
     load_problem!(lp, A, b, c, lo, hi)
     sln = solve(lp)

@@ -62,6 +62,8 @@ bm = @benchmarkable solve(lp)
 tune!(bm)
 run(bm)
 
+solve(lp)
+
 #===============
     adlittle
 ===============#
